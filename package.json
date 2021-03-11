@@ -1,7 +1,7 @@
 {
 	"name": "@dhtmlx/gantt-data-provider",
 	"version": "0.1.0",
-	"description": "data proxy between client side Gantt widget and a backend",
+	"description": "Data proxy between client side Gantt widget and a server side API",
 	"main": "dist/data.js",
 	"module": "dist/data.es6.js",
 	"types": "dist/types/data.d.ts",

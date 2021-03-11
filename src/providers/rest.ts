@@ -1,4 +1,4 @@
-import { GanttItem, GanttItemData, GanttLink, GanttLinkData, StringHash, Response } from "types";
+import { GanttItem, GanttLink, StringHash, Response } from "types";
 
 interface AfterUpdateConfig<T> {
 	task?: { (id:string, response:T) : void }
@@ -26,7 +26,7 @@ export default class RestDataProvider<T extends Response> {
 		});
 	}
 
-	serializeTask(task:GanttItemData):StringHash<number|string> {
+	serializeTask(task:GanttItem):StringHash<number|string> {
 		return {
 			progress: task.progress||0,
 			parent: task.parent ? (this._ids.get("t"+task.parent) || task.parent) : 0,
@@ -38,7 +38,7 @@ export default class RestDataProvider<T extends Response> {
 		};
 	}
 
-	serializeLink(link:GanttLinkData):StringHash<number|string> {
+	serializeLink(link:GanttLink):StringHash<number|string> {
 		return {
 			source: this._ids.get("t"+link.source) || link.source,
 			target: this._ids.get("t"+link.target) || link.target,
@@ -46,12 +46,13 @@ export default class RestDataProvider<T extends Response> {
 		};
 	}
 
-	dateFormat(a:Date):string {
+	dateFormat(a:string|Date):string {
+		if (typeof a === "string")
+			return a;
 		return a.getFullYear()+"-"+(a.getMonth()+1)+"-"+a.getDate()+" 00:00"
-
 	}
 
-	saveData(ev:{ action:string, obj:GanttItemData|GanttLinkData }):void {
+	saveData(ev:{ action:string, obj:GanttItem|GanttLink }):void {
 		const { action, obj } = ev;
 
 		let sid = obj.id.toString();
@@ -67,13 +68,13 @@ export default class RestDataProvider<T extends Response> {
 					return this.send(
 						"/tasks/" + sid,
 						"PUT",
-						this.serializeTask(obj as GanttItemData)
+						this.serializeTask(obj as GanttItem)
 					);
 				}, 1000);
 				break;
 			}
 			case "add-task":
-				this.send("/tasks", "POST", this.serializeTask(obj as GanttItemData))
+				this.send("/tasks", "POST", this.serializeTask(obj as GanttItem))
 					.then((res:T) => {
 						if (res.id)
 							this._ids.set("t"+sid, res.id.toString());
@@ -85,10 +86,10 @@ export default class RestDataProvider<T extends Response> {
 				this.send("/tasks/" + sid, "DELETE");
 				break;
 			case "update-link":
-				this.send("/links/" + sid, "PUT", this.serializeLink(obj as GanttLinkData));
+				this.send("/links/" + sid, "PUT", this.serializeLink(obj as GanttLink));
 				break;
 			case "add-link":
-				this.send("/links", "POST", this.serializeLink(obj as GanttLinkData))
+				this.send("/links", "POST", this.serializeLink(obj as GanttLink))
 					.then((res:T) => {
 						if (res.id)
 							this._ids.set("l"+sid, res.id.toString());
