@@ -1,4 +1,4 @@
-import { GanttItem, GanttLink, StringHash, Response } from "types";
+import { GanttItem, GanttLink, StringHash, Response, MovePosition } from "types";
 
 interface AfterUpdateConfig<T> {
 	task?: { (id:string, response:T) : void }
@@ -38,6 +38,14 @@ export default class RestDataProvider<T extends Response> {
 		};
 	}
 
+	serializeMove(obj:MovePosition):StringHash<number|string> {
+		return {
+			mode: obj.mode,
+			target: obj.target ? (this._ids.get("t"+obj.target) || obj.target) : 0,
+			parent: obj.parent ? (this._ids.get("t"+obj.parent) || obj.parent) : 0
+		};
+	}
+
 	serializeLink(link:GanttLink):StringHash<number|string> {
 		return {
 			source: this._ids.get("t"+link.source) || link.source,
@@ -52,7 +60,7 @@ export default class RestDataProvider<T extends Response> {
 		return a.getFullYear()+"-"+(a.getMonth()+1)+"-"+a.getDate()+" 00:00"
 	}
 
-	saveData(ev:{ action:string, obj:GanttItem|GanttLink }):void {
+	saveData(ev:{ action:string, obj:GanttItem|GanttLink|MovePosition, mode?:string }):void {
 		const { action, obj } = ev;
 
 		let sid = obj.id.toString();
@@ -73,8 +81,11 @@ export default class RestDataProvider<T extends Response> {
 				}, 1000);
 				break;
 			}
+			case "reorder-task":
+				this.send(`/tasks/${sid}/position`, "PUT", this.serializeMove(obj as MovePosition));
+				break;
 			case "add-task":
-				this.send("/tasks", "POST", this.serializeTask(obj as GanttItem))
+				this.send("/tasks", "POST", { mode:ev.mode, ...this.serializeTask(obj as GanttItem) })
 					.then((res:T) => {
 						if (res.id)
 							this._ids.set("t"+sid, res.id.toString());

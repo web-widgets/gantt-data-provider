@@ -24,3 +24,10 @@ export interface StringHash<T> {
 export interface Response {
     id?: number|string;
 }
+
+export interface MovePosition {
+    id: number|string;
+    mode: string;
+    target?: number|string;
+    parent?: number|string;
+}
